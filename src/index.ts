@@ -63,7 +63,7 @@ const server = new ApolloServer({
   typeDefs,
   resolvers,
   cache: new KeyvAdapter(keyV),
-});update
+});
 
 // Passing an ApolloServer instance to the `startStandaloneServer` function:
 //  1. creates an Express app
