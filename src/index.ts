@@ -1,5 +1,7 @@
-import { ApolloServer } from '@apollo/server';
-import { startStandaloneServer } from '@apollo/server/standalone'
+import { ApolloServer } from "@apollo/server";
+import { startStandaloneServer } from "@apollo/server/standalone";
+import Keyv from "keyv";
+import { KeyvAdapter } from "@apollo/utils.keyvadapter";
 
 // A schema is a collection of type definitions (hence "typeDefs")
 // that together define the "shape" of queries that are executed against
@@ -23,12 +25,12 @@ const typeDefs = `#graphql
 
 const books = [
   {
-    title: 'The Awakening',
-    author: 'Kate Chopin',
+    title: "The Awakening",
+    author: "Kate Chopin",
   },
   {
-    title: 'City of Glass',
-    author: 'Paul Auster',
+    title: "City of Glass",
+    author: "Paul Auster",
   },
 ];
 
@@ -36,7 +38,12 @@ const books = [
 // schema. This resolver retrieves books from the "books" array above.
 const resolvers = {
   Query: {
-    books: () => books,
+    // @ts-ignore
+    books: (parent, args, contextValue, info) => {
+      console.log("books");
+      info.cacheControl.setCacheHint({ maxAge: 60, scope: "PRIVATE" });
+      return books;
+    },
   },
 };
 
@@ -51,6 +58,14 @@ const server = new ApolloServer({
 //  1. creates an Express app
 //  2. installs your ApolloServer instance as middleware
 //  3. prepares your app to handle incoming requests
-const { url } = await startStandaloneServer(server, { listen: { port: 4000 } });
+const keyV = new Keyv(`redis://localhost:6379`);
+const { url } = await startStandaloneServer(server, {
+  // @ts-ignore
+  cache: new KeyvAdapter(keyV),
+  cacheControl: {
+    defaultMaxAge: 5,
+  },
+  listen: { port: 4000 },
+});
 
 console.log(`🚀 Server listening at: ${url}`);
