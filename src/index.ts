@@ -62,8 +62,8 @@ const keyV = new Keyv(`redis://localhost:6379`);
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  cache: new KeyvAdapter(new Keyv()),
-});
+  cache: new KeyvAdapter(keyV),
+});update
 
 // Passing an ApolloServer instance to the `startStandaloneServer` function:
 //  1. creates an Express app
