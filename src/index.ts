@@ -8,9 +8,20 @@ import { KeyvAdapter } from "@apollo/utils.keyvadapter";
 // your data.
 const typeDefs = `#graphql
   # Comments in GraphQL strings (such as this one) start with the hash (#) symbol.
+  
+  enum CacheControlScope {
+    PUBLIC
+    PRIVATE
+  }
+
+  directive @cacheControl(
+    maxAge: Int
+    scope: CacheControlScope
+    inheritMaxAge: Boolean
+  ) on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
   # This "Book" type defines the queryable fields for every book in our data source.
-  type Book {
+  type Book @cacheControl(maxAge: 240) {
     title: String
     author: String
   }
@@ -38,9 +49,7 @@ const books = [
 // schema. This resolver retrieves books from the "books" array above.
 const resolvers = {
   Query: {
-    // @ts-ignore
     books: (parent, args, contextValue, info) => {
-      console.log("books");
       info.cacheControl.setCacheHint({ maxAge: 60, scope: "PRIVATE" });
       return books;
     },
@@ -49,22 +58,19 @@ const resolvers = {
 
 // The ApolloServer constructor requires two parameters: your schema
 // definition and your set of resolvers.
+const keyV = new Keyv(`redis://localhost:6379`);
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  cache: new KeyvAdapter(new Keyv()),
 });
 
 // Passing an ApolloServer instance to the `startStandaloneServer` function:
 //  1. creates an Express app
 //  2. installs your ApolloServer instance as middleware
 //  3. prepares your app to handle incoming requests
-const keyV = new Keyv(`redis://localhost:6379`);
+
 const { url } = await startStandaloneServer(server, {
-  // @ts-ignore
-  cache: new KeyvAdapter(keyV),
-  cacheControl: {
-    defaultMaxAge: 5,
-  },
   listen: { port: 4000 },
 });
 
